@@ -1,0 +1,17 @@
+Design choices:
+
+* While Hangman will involve a UI involving a person being progressively hanged if the user gets the word incorrect, this aspect was kept completely separate from the API. This affords the client developer flexibility. All he or she needs to know is the total number of guesses allowed, which the developer also controls, and the remaining number of allowed guesses. From this, the dev can implement a hanging UI as needed (maybe if 5 total guesses are allowed, then animate 5 different stages of the hanging). Moreover, this design also allows the dev to decide whether the game involves any hanging at all. Maybe each incorrect guess causes a part of a snowman to melt.
+
+* In implementing cancel_game, there are a whole host of considerations. I chose to remove the game entirely from the datastore. This might make sense if cost of storage is a severe constraint, as might be the case for individual devs or students practicing.
+
+On the other hand, a big game development company might want to retain all history of every game period for the purposes of analytics. The company might want to know every game result, to determine where and when users are falling off. In this case, just storing a flag and turning it off when the user cancels a game (rendering it inactive) would make sense.
+
+* In evaluating user input, I wanted to be careful not to count a duplicate guess or an invalid guess (such as a non-letter) as an incorrect guess. These are examples of invalid input, and the API handles them as such and raises exceptions. I also chose to add these invalid inputs to the game history. This was a tough call, but I thought it might help a user to have the full history in order to learn from past mistakes. It might also help a client-side dev catch issues with the UI that might be leading to more invalid input.
+
+* I chose to provide the client dev with plenty of information after each move. This includes the state of the word currently, including blanks and correctly guessed letters. I also include previous guesses so the client dev can expose this to the user with some UI.
+
+* In ranking the users, I chose to rank by winning_percent, and then to break ties by looking at total wins. Of course, this isn’t perfect, but it is reminiscent of how sports teams calculating standings leaders.
+
+* For representing each game's history, I stored each move (including invalid inputs, as detailed above) in an array of dictionaries. This gave a user a total, play-by-play recap of each game. 
+
+* I opted to remind only those users who had an ongoing incomplete game via email. I do this by filtering for a user's games which don't have the game_over property set to True.

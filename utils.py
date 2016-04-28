@@ -33,3 +33,6 @@ def get_by_urlsafe(urlsafe, model):
     if not isinstance(entity, model):
         raise ValueError('Incorrect Kind')
     return entity
+
+def find(s, ch):
+    return [i for i, ltr in enumerate(s) if ltr == ch]
