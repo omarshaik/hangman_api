@@ -5,7 +5,6 @@ move game logic to another file. Ideally the API will be simple, concerned
 primarily with communication to/from the API's users."""
 
 
-import logging
 import endpoints
 from protorpc import remote, messages
 from google.appengine.api import memcache
@@ -57,11 +56,7 @@ class HangmanApi(remote.Service):
         if not user:
             raise endpoints.NotFoundException(
                     'A User with that name does not exist!')
-        try:
-            game = Game.new_game(user.key, request.attempts)
-        except ValueError:
-            raise endpoints.BadRequestException('Maximum must be greater '
-                                                'than minimum!')
+        game = Game.new_game(user.key, request.attempts)
 
         # Use a task queue to update the average attempts remaining.
         # This operation is not needed to complete the creation of a new game
@@ -93,56 +88,65 @@ class HangmanApi(remote.Service):
 
         if game.game_over:
             return game.to_form('Game already over!')
-
+        guess = request.guess.lower()
         # Check for invalid inputs and raise an exception as necessary
         made_illegal_move = False
-        if len(request.guess) != 1:
-          msg = 'Please enter a single letter.'
+        if not guess.isalpha():
+          msg = 'Please enter a letter or word.'
           made_illegal_move = True
-        elif game.previous_guesses is not None and request.guess in game.previous_guesses:
-          msg = 'You have already guessed that letter. Choose again.'
+        elif game.previous_guesses is not None and guess in game.previous_guesses.split(",") :
+          msg = 'You have already guessed that. Choose again.'
           made_illegal_move = True
-        elif request.guess not in 'abcdefghijklmnopqrstuvwxyz':
-          msg = 'Please enter a LETTER.'
+        elif len(guess) > len(game.target):
+          msg = 'Your guess had too many letters in it.'
           made_illegal_move = True
 
         if made_illegal_move:
-          game.history.append({'guess': request.guess, 'result': msg})
+          game.history.append({'guess': guess, 'result': msg})
           game.put()
           raise endpoints.BadRequestException(msg)
 
-        if request.guess in game.target:
-          indices = find(game.target, request.guess)
+        if guess == game.target:
+          msg = 'You guessed correctly! You win!'
+          game.current_word_state = game.target
+          game.history.append({'guess': guess, 'result': msg})
+          game.put()
+          game.end_game(True)
+          return game.to_form(msg)
+
+        if guess in game.target:
+          indices = find(game.target, guess)
           new_state = ""
           for idx, char in enumerate(game.current_word_state):
             if idx in indices:
-              new_state += request.guess
+              new_state += guess
             else:
               new_state += char
           game.current_word_state = new_state
           msg = "You guessed correctly!"
           if game.current_word_state == game.target:
             msg += ' You win!'
-            game.history.append({'guess': request.guess, 'result': msg})
+            game.history.append({'guess': guess, 'result': msg})
             game.put()
             game.end_game(True)
             return game.to_form(msg)
         else:
           msg = "You guessed incorrectly."
           game.attempts_remaining -= 1
-        if game.previous_guesses is None:
-          game.previous_guesses = request.guess
+
+        if not game.previous_guesses or len(game.previous_guesses) == 0:
+          game.previous_guesses = guess
         else:
-          game.previous_guesses += request.guess
+          game.previous_guesses +=  "," + guess
         msg += " Here's the current state of the word: %s" % game.current_word_state
         if game.attempts_remaining < 1:
           msg += ' Game over!'
-          game.history.append({'guess': request.guess, 'result': msg})
+          game.history.append({'guess': guess, 'result': msg})
           game.put()
           game.end_game(False)
           return game.to_form(msg)
         else:
-          game.history.append({'guess': request.guess, 'result': msg})
+          game.history.append({'guess': guess, 'result': msg})
           game.put()
           return game.to_form(msg)
 
