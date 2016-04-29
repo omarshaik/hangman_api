@@ -213,7 +213,7 @@ class HangmanApi(remote.Service):
     def get_high_scores(self, request):
         """Return high scores."""
         if request.number_of_results > 0:
-          scores = Score.query().order(Score.guesses).fetch(number_of_results)
+          scores = Score.query().order(Score.guesses).fetch(request.number_of_results)
         else:
           scores = Score.query().order(Score.guesses)
         return ScoreForms(items=[score.to_form() for score in scores])
