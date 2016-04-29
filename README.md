@@ -8,16 +8,17 @@
  
  
  
-##Game Description:
+## Game Description:
 Hangman is a simple word guessing game. Each game begins with a random 'target'
 word. 'Guesses' are sent to the `make_move` endpoint which will reply
 with either: 'Your guess is correct!', 'Your guess is incorrect', 'you win', or 'game over' (if the maximum
 number of attempts is reached).
 Many different Hangman games can be played by many different Users at any
 given time. Each game can be retrieved or played by using the path parameter
-`urlsafe_game_key`.
+`urlsafe_game_key`. Individual games are scored by the number of incorrect guesses (attempts) required to correctly guess the word.
+Users are ranked by their winning percentage, and then by their number of wins in the case of ties.
 
-##Files Included:
+## Files Included:
  - api.py: Contains endpoints and game playing logic.
  - app.yaml: App configuration.
  - cron.yaml: Cronjob configuration.
@@ -25,7 +26,7 @@ given time. Each game can be retrieved or played by using the path parameter
  - models.py: Entity and message definitions including helper methods.
  - utils.py: Helper function for retrieving ndb.Models by urlsafe Key string.
 
-##Endpoints Included:
+## Endpoints Included:
  - **create_user**
     - Path: 'user'
     - Method: POST
@@ -107,7 +108,7 @@ given time. Each game can be retrieved or played by using the path parameter
     - Returns: ScoreForms. 
     - Description: Returns all Scores recorded by the provided player (unordered).
     Will raise a NotFoundException if the User does not exist.
-    
+
  - **get_active_game_count**
     - Path: 'games/active'
     - Method: GET
